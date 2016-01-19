@@ -1,14 +1,15 @@
 source 'https://rubygems.org'
 
-ruby '2.2.2'
+ruby '2.3.0'
 
 gem 'nokogiri'
 gem 'byebug'
-gem 'activemodel', '4.2.1'
+gem 'activemodel'
 
 group :test do
+	gem 'guard-rspec'
   gem 'fakeweb'
-  gem 'rspec', '3.3.0'
+  gem 'rspec'
   gem 'rspec-its'
   gem 'rspec-collection_matchers'
 end
