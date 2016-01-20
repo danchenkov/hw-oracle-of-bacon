@@ -38,40 +38,64 @@ class OracleOfBacon
 		rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError,
 			Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError,
 			Net::ProtocolError => e
-      # convert all of these into a generic OracleOfBacon::NetworkError,
-      #  but keep the original error message
-      # your code here
-    end
-    # your code here: create the OracleOfBacon::Response object
-  end
+			# convert all of these into a generic OracleOfBacon::NetworkError,
+			#  but keep the original error message
+			# your code here
+			raise OracleOfBacon::NetworkError
+		end
+		# your code here: create the OracleOfBacon::Response object
+		OracleOfBacon::Response.new(xml)
+	end
 
-  def make_uri_from_arguments
-    # your code here: set the @uri attribute to properly-escaped URI
-    #   constructed from the @from, @to, @api_key arguments
-  end
+	def make_uri_from_arguments
+		# your code here: set the @uri attribute to properly-escaped URI
+		#   constructed from the @from, @to, @api_key arguments
+		@uri = 'http://oracleofbacon.org/cgi-bin/xml?' + [(!@api_key.nil? ? "p=" + URI.escape(@api_key).gsub('%20', '+') : ''), (@from ? "a=" + URI.escape(@from).gsub('%20', '+') : ''), (@to ? "b=" + URI.escape(@to).gsub('%20', '+') : '')].join('&')
 
-  class Response
-  	attr_reader :type, :data
-    # create a Response object from a string of XML markup.
-    def initialize(xml)
-    	@doc = Nokogiri::XML(xml)
-    	parse_response
-    end
+	end
 
-    private
+	class Response
+		attr_reader :type, :data
+		# create a Response object from a string of XML markup.
+		def initialize(xml)
+			@doc = Nokogiri::XML(xml)
+			parse_response
+		end
 
-    def parse_response
-    	if ! @doc.xpath('/error').empty?
-    		parse_error_response
-      # your code here: 'elsif' clauses to handle other responses
-      # for responses not matching the 3 basic types, the Response
-      # object should have type 'unknown' and data 'unknown response'
-    end
-  end
-  def parse_error_response
-  	@type = :error
-  	@data = 'Unauthorized access'
-  end
-end
+		private
+
+		def parse_response
+			puts @doc.xpath
+			if ! @doc.xpath('/error').empty?
+				parse_error_response
+			elsif ! @doc.xpath('/link').empty?
+				parse_graph_response
+			elsif ! @doc.xpath('/spellcheck').empty?
+				parse_spellcheck_response
+			else
+				parse_unknown_response
+			end
+		end
+
+		def parse_error_response
+			@type = :error
+			@data = 'Unauthorized access'
+		end
+
+		def parse_graph_response
+			@type = :graph
+			@data = @doc.xpath('/link/*').children.map{|el| el.content}
+		end
+
+		def parse_spellcheck_response
+			@type = :spellcheck
+			@data = @doc.xpath('/spellcheck/match').children.map{|el| el.content}
+		end
+
+		def parse_unknown_response
+			@type = :unknown
+			@data = 'unknown response'
+		end
+	end
 end
 
